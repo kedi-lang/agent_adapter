@@ -13,13 +13,6 @@ async def test_adapters(*adapters: AgentAdapter):
     """
     adapter1, adapter2 = adapters
 
-    # class CapitalSignature(dspy.Signature):
-    #     user_prompt: str = dspy.InputField()
-    #     capital: str = dspy.OutputField(description="the capital")
-
-    # class CapitalModel(BaseModel):
-    #     capital: str = Field(..., description="the capital")
-
     # result1 = await adapter1.produce(template, output_type=CapitalSignature)
     result1 = await adapter1.produce(
         template,
