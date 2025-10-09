@@ -1,5 +1,6 @@
 import dspy
 from dspy import LM
+from pydantic import BaseModel, create_model
 from pydantic_ai import Agent
 from pydantic_ai._run_context import AgentDepsT
 from pydantic_ai.output import OutputDataT
@@ -7,14 +8,38 @@ from pydantic_ai.output import OutputDataT
 from .meta import T
 
 
+def make_repr(cls: type) -> str:
+    _type_repr = repr(cls)
+    return _type_repr if not _type_repr.startswith("<class") else cls.__name__
+
+
 class PydanticAdapter(Agent[AgentDepsT, OutputDataT]):
-    async def produce(
-        self, template: str, output_type: OutputDataT, **kwargs
-    ) -> OutputDataT:
+    """
+    Adapter to use Pydantic AI agents.
+    """
+
+    def type_builder(self, output_schema: dict[str, type]) -> type[BaseModel]:
         """
-        Adapter to use Pydantic AI agents.
+        Type builder to create a Pydantic model from a given output schema.
+        Args:
+            output_schema (dict): A dictionary defining the output schema.
+        Returns:
+            type: A Pydantic model class based on the provided schema.
         """
-        return (await self.run(template, output_type=output_type, **kwargs)).output
+        field_definitions = {
+            field: (type_, ...) for field, type_ in output_schema.items()
+        }
+        return create_model("_OutputModel", __base__=BaseModel, **field_definitions)
+
+    async def produce(self, template: str, output_schema: dict, **kwargs):
+        """
+        Invoke the Pydantic AI agent with the provided template and output schema.
+        """
+        return (
+            await self.run(
+                template, output_type=self.type_builder(output_schema), **kwargs
+            )
+        ).output
 
 
 class DSPyAdapter:
@@ -36,31 +61,49 @@ class DSPyAdapter:
             )
         )
 
+    async def type_builder(
+        self, output_schema: dict[str, type], **kwargs
+    ) -> str | dspy.Signature:
+        """
+        Type builder to create a dictionary schema from a given output type.
+        Args:
+            output_schema (dict): A dictionary defining the output schema.
+            string (bool): Whether to use string signatures.
+        Returns:
+            dict: A dictionary schema based on the provided output type.
+        """
+        field_definitions = {
+            field: (type_, dspy.OutputField()) for field, type_ in output_schema.items()
+        }
+        field_definitions.update({"user_prompt": (str, dspy.InputField())})
+        if not kwargs.pop("string", False):
+            return create_model(
+                "_OutputSignature",
+                __base__=dspy.Signature,
+                **field_definitions,
+            )
+        annotations = {
+            f"{field}: {make_repr(type_)}" for field, type_ in output_schema.keys()
+        }
+        return f"user_prompt: str -> {', '.join(annotations)}"
+
     async def produce(
         self,
         template: str,
-        output_type: type[T] | str | dspy.Signature | None = None,
+        output_schema: dict[str, type],
         **kwargs,
     ) -> T:
         """
         Adapter to use DSPy agents.
         """
-        assert issubclass(output_type, dspy.Signature) or type(str) is type, ValueError(
-            "Signature or type must be passed."
-        )
         kwargs.pop("user_prompt", None)
+        string = kwargs.pop("string", False)
+        sig = await self.type_builder(output_schema, string=string)
         instructions = kwargs.pop("instructions", None)
         kw = {} if not instructions else {"instructions": instructions}
-        if issubclass(output_type, dspy.Signature):
-            prediction = dspy.Predict(output_type)
+        if not string:
+            prediction = dspy.Predict(sig.with_instructions(instructions))
             return prediction(**kwargs, user_prompt=template)
         else:
-            _type_repr = repr(output_type)
-            _type_repr = (
-                _type_repr
-                if not _type_repr.startswith("<class")
-                else output_type.__name__
-            )
-            sig = f"user_prompt: str -> output: {_type_repr}"
             prediction = dspy.Predict(dspy.Signature(sig, **kw))
-            return getattr(prediction(user_prompt=template), "output", None)
+            return prediction(user_prompt=template)

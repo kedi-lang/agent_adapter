@@ -22,15 +22,19 @@ async def test_adapters(*adapters: AgentAdapter):
 
     # result1 = await adapter1.produce(template, output_type=CapitalSignature)
     result1 = await adapter1.produce(
-        template, output_type=str, instructions="şehri tersten yaz"
+        template,
+        output_schema={"capital": str, "country": str},
+        instructions="şehri tersten yaz",
     )
     # CapitalSignature works here too, but we don't need user_prompt field
-    result2 = await adapter2.produce(template, output_type=CapitalModel)
+    result2 = await adapter2.produce(
+        template, output_schema={"capital": str, "country": str}
+    )
 
     print("DSPy Result: ", result1)
-    print("PyAI Result: ", result2.capital)
+    print("PyAI Result: ", result2)
 
-    assert "arakna" in result1.lower() and "ankara" in result2.capital.lower()
+    assert "arakna" in result1.capital.lower() and "ankara" in result2.capital.lower()
 
 
 async def main():
