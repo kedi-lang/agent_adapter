@@ -21,7 +21,7 @@ async def test_adapters(*adapters: AgentAdapter):
         # whether to use string signatures instead runtime signature generation
         instructions="şehri tersten yaz",
     )
-    # CapitalSignature works here too, but we don't need user_prompt field
+
     result2 = await adapter2.produce(
         template, output_schema={"capital": str, "country": str}
     )
