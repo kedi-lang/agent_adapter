@@ -14,7 +14,14 @@ A unified adapter library that provides a consistent interface for working with 
 ## Installation
 
 ```bash
-pip install dspy pydantic pydantic-ai
+uv venv venv
+uv init
+uv sync
+```
+
+```bash
+python3 -m virtualenv venv
+python3 -m pip install -r requirements.txt
 ```
 
 ## Requirements
