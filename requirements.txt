@@ -1,0 +1,4 @@
+dspy
+pydantic
+pydantic-ai
+python-dotenv
