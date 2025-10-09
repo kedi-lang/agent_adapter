@@ -83,7 +83,7 @@ class DSPyAdapter:
                 **field_definitions,
             )
         annotations = {
-            f"{field}: {make_repr(type_)}" for field, type_ in output_schema.keys()
+            f"{field}: {make_repr(type_)}" for field, type_ in output_schema.items()
         }
         return f"user_prompt: str -> {', '.join(annotations)}"
 
