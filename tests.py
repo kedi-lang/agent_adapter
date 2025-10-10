@@ -1,8 +1,5 @@
 import asyncio
 
-import dspy
-from pydantic import BaseModel, Field
-
 from src.agent_adapter import DSPyAdapter, PydanticAdapter
 from src.agent_adapter.meta import AgentAdapter
 
@@ -11,15 +8,15 @@ async def test_adapters(*adapters: AgentAdapter):
     template = """
         What is the capital of Türkiye?
     """
-    adapter1, adapter2 = adapters
+    adapter1, adapter2, *_ = adapters
 
-    # result1 = await adapter1.produce(template, output_type=CapitalSignature)
     result1 = await adapter1.produce(
         template,
         output_schema={"capital": str, "country": str},
         # string=True
         # whether to use string signatures instead runtime signature generation
         instructions="şehri tersten yaz",
+        # dspy specific instructions
     )
 
     result2 = await adapter2.produce(

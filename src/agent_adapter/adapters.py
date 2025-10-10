@@ -27,6 +27,7 @@ class PydanticAdapter(Agent[AgentDepsT, OutputDataT]):
         Returns:
             type: A Pydantic model class based on the provided schema.
         """
+        assert output_schema, "Output schema cannot be empty."
         field_definitions = {
             field: (type_, ...) for field, type_ in output_schema.items()
         }
@@ -74,6 +75,7 @@ class DSPyAdapter:
         Returns:
             dict: A dictionary schema based on the provided output type.
         """
+        assert output_schema, "Output schema cannot be empty."
         field_definitions = {
             field: (type_, dspy.OutputField()) for field, type_ in output_schema.items()
         }
