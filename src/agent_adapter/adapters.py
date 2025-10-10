@@ -17,6 +17,7 @@ class PydanticAdapter(Agent[AgentDepsT, OutputDataT]):
     """
     Adapter to use Pydantic AI agents.
     """
+
     @staticmethod
     def type_builder(output_schema: dict[str, type]) -> type[BaseModel]:
         """
@@ -60,6 +61,7 @@ class DSPyAdapter:
                 **kwargs,
             )
         )
+
     @staticmethod
     async def type_builder(
         output_schema: dict[str, type], **kwargs

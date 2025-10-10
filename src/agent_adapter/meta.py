@@ -21,7 +21,7 @@ class AgentAdapter(Protocol[T]):
             T: The output produced by the agent, matching the specified output type.
         """
         pass
-    
+
     @staticmethod
     async def type_builder(output_schema: dict[str, type], **kwargs) -> T:
         """
