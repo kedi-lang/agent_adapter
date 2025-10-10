@@ -1,7 +1,10 @@
 import asyncio
 
+import dotenv
 from src.agent_adapter import DSPyAdapter, PydanticAdapter
 from src.agent_adapter.meta import AgentAdapter
+
+dotenv.load_dotenv()
 
 
 async def test_adapters(*adapters: AgentAdapter):

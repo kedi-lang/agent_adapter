@@ -1,11 +1,8 @@
 from typing import Protocol, TypeVar
 
-import dotenv
 from typing_extensions import runtime_checkable
 
 T = TypeVar("T")
-
-dotenv.load_dotenv()
 
 
 @runtime_checkable
