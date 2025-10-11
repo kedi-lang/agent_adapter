@@ -1,3 +1,5 @@
+import asyncio
+
 import dspy
 from dspy import LM
 from pydantic import BaseModel, create_model
@@ -33,15 +35,40 @@ class PydanticAdapter(Agent[AgentDepsT, OutputDataT]):
         }
         return create_model("_OutputModel", __base__=BaseModel, **field_definitions)
 
-    async def produce(self, template: str, output_schema: dict, **kwargs):
+    async def produce(
+        self,
+        template: str,
+        output_schema: dict[str, type] | None = None,
+        output_type: type[T] | None = None,
+        **kwargs,
+    ):
         """
         Invoke the Pydantic AI agent with the provided template and output schema.
         """
+        assert output_schema or output_type, "Output spec must be provided."
         return (
             await self.run(
-                template, output_type=self.type_builder(output_schema), **kwargs
+                template,
+                output_type=output_type or self.type_builder(output_schema),
+                **kwargs,
             )
         ).output
+
+    def produce_sync(
+        self,
+        template: str,
+        output_schema: dict[str, type] | None = None,
+        output_type: type[T] | None = None,
+        **kwargs,
+    ) -> T:
+        """
+        Synchronous version of produce method.
+        """
+        return asyncio.run(
+            self.produce(
+                template, output_schema=output_schema, output_type=output_type, **kwargs
+            )
+        )
 
 
 class DSPyAdapter:
@@ -75,7 +102,7 @@ class DSPyAdapter:
         Returns:
             dict: A dictionary schema based on the provided output type.
         """
-        assert output_schema, "Output schema cannot be empty."
+        assert output_schema, "Output schema must be provided."
         field_definitions = {
             field: (type_, dspy.OutputField()) for field, type_ in output_schema.items()
         }
@@ -100,6 +127,7 @@ class DSPyAdapter:
         """
         Adapter to use DSPy agents.
         """
+        assert output_schema, "Output spec must be provided."
         kwargs.pop("user_prompt", None)
         string = kwargs.pop("string", False)
         sig = await self.type_builder(output_schema, string=string)
@@ -111,3 +139,16 @@ class DSPyAdapter:
         else:
             prediction = dspy.Predict(dspy.Signature(sig, **kw))
             return prediction(user_prompt=template)
+
+    def produce_sync(
+        self,
+        template: str,
+        output_schema: dict[str, type],
+        **kwargs,
+    ) -> T:
+        """
+        Synchronous version of produce method.
+        """
+        return asyncio.run(
+            self.produce(template, output_schema=output_schema, **kwargs)
+        )
